@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nutcrackers">
+<meta name="theme-color" content="#8e1620">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Nutcracker Keeper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Cinzel:wght@600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: warm, festive, collector-proud; big readable type for low vision.
+   IDEA: a toy soldier's parade cabinet — red regimental coat, gold braid, velvet shelves.
+   PICTURE: an original nutcracker soldier standing guard over the collection stats; snow drifts.
+   COLOUR and TYPE: regimental red ground, gold braid accent, pine green support; Cinzel titles, Atkinson Hyperlegible body.
+   LAYOUT: phone-first app shell, sticky tab bar with a centre scan button, sheets slide up for detail. No nuts anywhere. */
+:root{color-scheme:light dark;
+--bg:light-dark(#fbf6ee,#0f1713);--card:light-dark(#ffffff,#18231d);--ink:light-dark(#1d1410,#f6efe3);--muted:light-dark(#6b5a4e,#b9ad9c);
+--red:light-dark(#9b1b24,#c23a3f);--red-deep:light-dark(#6e0f17,#5a0d13);--gold:light-dark(#b8892a,#e0b75a);--gold-soft:light-dark(#f3e4bd,#3b3220);
+--green:light-dark(#18452f,#5fae84);--line:light-dark(#e8dccb,#2b3a31);--shadow:light-dark(0 2px 10px rgba(80,30,10,.12),0 2px 10px rgba(0,0,0,.5));
+--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.5 "Atkinson Hyperlegible",system-ui,-apple-system,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Cinzel,Georgia,serif;margin:0;line-height:1.1;text-wrap:balance}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--red)}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.hide{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* header */
+.hero{position:relative;background:linear-gradient(180deg,var(--red) 0%,var(--red-deep) 100%);color:#fff7e8;padding:calc(var(--safe-t) + 14px) 18px 18px;overflow:hidden}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:repeating-linear-gradient(90deg,var(--gold) 0 14px,#f7e3a6 14px 18px)}
+.hero h1{font-size:30px;letter-spacing:.01em;color:#fff3d6}
+.hero .sub{font-size:16px;color:#f6d9b8;margin-top:2px}
+.hero-row{display:flex;gap:12px;align-items:flex-end;position:relative;z-index:1}
+.hero-row .txt{flex:1}
+.soldier{width:84px;height:150px;flex:none;margin-bottom:-12px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px;position:relative;z-index:1}
+.stat{background:rgba(255,245,225,.12);border:1px solid rgba(247,227,166,.35);border-radius:14px;padding:8px 10px}
+.stat b{display:block;font-size:clamp(19px,5.6vw,26px);line-height:1.15;color:#fff;white-space:nowrap}
+.stat span{font-size:13px;color:#f6d9b8;line-height:1.2;display:block}
+.snow{position:absolute;inset:0;pointer-events:none;z-index:0}
+.snow i{position:absolute;top:-10px;width:6px;height:6px;border-radius:50%;background:#fff;opacity:.55;animation:fall linear infinite}
+@keyframes fall{to{transform:translateY(260px) translateX(20px)}}
+@media (prefers-reduced-motion:reduce){.snow i{animation:none;display:none}}
+.pagehead{background:var(--red);color:#fff3d6;padding:calc(var(--safe-t) + 14px) 18px 14px;position:relative}
+.pagehead::after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:repeating-linear-gradient(90deg,var(--gold) 0 14px,#f7e3a6 14px 18px)}
+.pagehead h1{font-size:26px}
+.pagehead .sub{font-size:15px;color:#f6d9b8}
+.pagehead .back{background:none;border:0;color:#fff3d6;font-size:17px;padding:6px 0;margin-bottom:4px;display:flex;align-items:center;gap:4px;min-height:44px}
+
+/* layout */
+main{padding-bottom:calc(96px + var(--safe-b))}
+.wrap{padding:14px 14px 0;max-width:1100px;margin:0 auto}
+.toolbar{display:grid;gap:10px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.field{display:grid;gap:4px}
+.field label,.lbl{font-size:15px;font-weight:700;color:var(--muted)}
+input[type=text],input[type=search],input[type=number],input[type=date],input[type=url],select,textarea{width:100%;min-height:50px;border:2px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px;font-size:18px}
+textarea{min-height:90px;resize:vertical}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 20px) 22px,calc(100% - 14px) 22px;background-size:6px 6px;background-repeat:no-repeat;padding-right:36px}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);outline:none}
+.btn{min-height:50px;border-radius:14px;border:2px solid var(--line);background:var(--card);padding:10px 16px;font-weight:700;font-size:17px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;color:var(--ink)}
+.btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#2a1a05}
+.btn.green{background:var(--green);border-color:var(--green);color:light-dark(#fff,#0b1a12)}
+.btn.danger{color:var(--red);border-color:var(--red)}
+.btn.block{width:100%}
+.btn.small{min-height:44px;font-size:15px;padding:8px 12px}
+.btn:disabled{opacity:.5}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+.chip{flex:none;min-height:44px;border-radius:999px;border:2px solid var(--line);background:var(--card);padding:6px 14px;font-size:16px;font-weight:700}
+.chip[aria-pressed=true]{background:var(--green);border-color:var(--green);color:light-dark(#fff,#0b1a12)}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--line);border-radius:14px;padding:4px;gap:4px}
+.seg button{min-height:46px;border:0;border-radius:11px;background:transparent;font-weight:700;font-size:17px}
+.seg button[aria-pressed=true]{background:var(--card);box-shadow:var(--shadow);color:var(--red)}
+.note{font-size:15px;color:var(--muted)}
+.empty{text-align:center;padding:36px 18px;color:var(--muted)}
+.empty svg{width:90px;height:150px;margin-bottom:8px}
+.empty h3{color:var(--ink);font-size:22px;margin-bottom:6px}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));gap:12px;margin-top:14px}
+.tile{background:var(--card);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;border:0;padding:0;text-align:left;display:flex;flex-direction:column;position:relative}
+.tile .ph{aspect-ratio:4/5;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.tile .ph img{width:100%;height:100%;object-fit:contain}
+.tile .ph img.cover{object-fit:cover}
+.tile .nm{flex:none;margin:8px 10px 10px;font-weight:700;font-size:16px;line-height:1.25;max-height:2.5em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.grid.c3 .tile .nm{font-size:14px;margin:6px 8px 8px}
+.tile .qty{position:absolute;top:8px;right:8px;background:var(--red);color:#fff;border-radius:999px;min-width:30px;height:30px;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 8px}
+.tile .num{position:absolute;top:8px;left:8px;background:var(--gold);color:#2a1a05;border-radius:999px;min-width:30px;height:30px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 8px}
+.tile .own{position:absolute;top:8px;right:8px;background:var(--green);color:#fff;border-radius:999px;width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+.tile.missing .ph img{filter:grayscale(1);opacity:.35}
+.tile.missing .nm{color:var(--muted);font-weight:400}
+.tile.missing::after{content:"Not owned";position:absolute;left:8px;bottom:58px;background:rgba(40,30,25,.75);color:#fff;font-size:13px;border-radius:8px;padding:2px 8px}
+.grid.c3 .tile.missing::after{bottom:48px;font-size:12px}
+
+/* folders */
+.linehead{display:flex;align-items:center;justify-content:space-between;margin:20px 2px 8px;gap:8px}
+.linehead h2{font-size:20px;color:var(--red)}
+.flist{display:grid;gap:10px}
+.frow{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:10px;border:0;text-align:left;width:100%}
+.frow .cv{width:64px;height:76px;border-radius:10px;background:#fff;flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.frow .cv img{width:100%;height:100%;object-fit:contain}
+.frow .fx{flex:1}
+.frow .fn{font-weight:700;font-size:18px;line-height:1.2}
+.frow .fc{font-size:15px;color:var(--muted)}
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--red))}
+.chev{color:var(--muted);font-size:24px;flex:none}
+
+/* tab bar */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:6px 4px calc(6px + var(--safe-b));box-shadow:0 -4px 16px rgba(0,0,0,.08)}
+.tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:13px;font-weight:700;color:var(--muted);min-height:56px;justify-content:center}
+.tabs button svg{width:28px;height:28px}
+.tabs button[aria-current=page]{color:var(--red)}
+.tabs .scanbtn{position:relative}
+.tabs .scanbtn span.ring{width:66px;height:66px;margin-top:-30px;border-radius:50%;background:var(--red);border:4px solid var(--gold);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 6px 14px rgba(110,15,23,.35)}
+.tabs .scanbtn span.ring svg{width:32px;height:32px}
+.tabs .scanbtn{color:var(--red)}
+
+/* sheets */
+.layer{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(20,10,5,.5)}
+.sheet{background:var(--bg);width:100%;max-width:720px;max-height:calc(100% - var(--safe-t) - 10px);border-radius:22px 22px 0 0;overflow:auto;padding:0 0 calc(20px + var(--safe-b));animation:up .22s ease-out;-webkit-overflow-scrolling:touch}
+.sheet.small{max-width:520px}
+@keyframes up{from{transform:translateY(40px);opacity:.4}}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}
+.sheet-head{position:sticky;top:0;z-index:2;background:var(--bg);display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.sheet-head h2{flex:1;font-size:20px}
+.xbtn{width:48px;height:48px;border-radius:50%;border:0;background:var(--line);font-size:26px;line-height:1;flex:none}
+.sheet-body{padding:14px;display:grid;gap:14px}
+.photo-big{background:#fff;border-radius:18px;overflow:hidden;display:flex;align-items:center;justify-content:center;aspect-ratio:4/5;max-height:56vh;margin:0 auto;width:100%}
+.photo-big img{width:100%;height:100%;object-fit:contain}
+.thumbs{display:flex;gap:10px;flex-wrap:wrap}
+.thumb{width:84px;border:3px solid var(--line);border-radius:12px;background:var(--card);padding:0;overflow:hidden;display:flex;flex-direction:column;align-items:stretch}
+.thumb img{width:100%;height:84px;object-fit:cover;background:#fff}
+.thumb span{font-size:12px;font-weight:700;padding:2px 4px;text-align:center}
+.thumb[aria-pressed=true]{border-color:var(--gold)}
+.dl{display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:6px 14px;font-size:17px}
+.dl dt{color:var(--muted);font-weight:700}
+.dl dd{margin:0;overflow-wrap:anywhere}
+.box{background:var(--card);border-radius:16px;padding:14px;box-shadow:var(--shadow);display:grid;gap:12px}
+.box h3{font-size:18px;color:var(--red)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:50px;height:50px;border-radius:12px;border:2px solid var(--line);background:var(--card);font-size:24px;font-weight:700}
+.stepper output{min-width:40px;text-align:center;font-size:22px;font-weight:700}
+.money{font-size:24px;font-weight:700;white-space:nowrap}
+.pill{display:inline-block;background:var(--gold-soft);color:var(--ink);border-radius:999px;padding:3px 10px;font-size:14px;font-weight:700}
+.cands{display:grid;gap:12px}
+.cand{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;background:var(--card);border-radius:16px;padding:10px;box-shadow:var(--shadow);align-items:start}
+.cand img{width:110px;height:136px;object-fit:contain;background:#fff;border-radius:10px}
+.cand .why{font-size:15px;color:var(--muted)}
+.score{font-weight:700}
+.compare{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.compare figure{margin:0;background:#fff;border-radius:14px;overflow:hidden}
+.compare img{width:100%;aspect-ratio:4/5;object-fit:contain;display:block}
+.compare figcaption{background:var(--card);font-size:14px;font-weight:700;padding:6px 8px;text-align:center}
+.steps{display:grid;gap:8px}
+.steps div{display:flex;gap:10px;align-items:center;font-size:17px}
+.steps div::before{content:"";width:18px;height:18px;border-radius:50%;border:3px solid var(--line);flex:none}
+.steps div.on::before{border-color:var(--gold);border-top-color:transparent;animation:spin 1s linear infinite}
+.steps div.done::before{background:var(--green);border-color:var(--green)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--safe-t) + 12px);background:#1d1410;color:#fff;padding:12px 18px;border-radius:14px;z-index:90;font-size:17px;max-width:90vw;box-shadow:var(--shadow)}
+.banner{background:var(--gold-soft);border-radius:14px;padding:10px 14px;font-size:16px;margin-top:12px}
+.picker .tile{outline:3px solid transparent}
+.picker .tile[aria-pressed=true]{outline-color:var(--green)}
+.picker .tile[aria-pressed=true]::before{content:"✓";position:absolute;top:8px;right:8px;background:var(--green);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;z-index:1}
+.linkrow{display:flex;gap:10px;flex-wrap:wrap}
+.cam{position:relative;width:100%;aspect-ratio:3/4;max-height:62vh;background:#000;border-radius:18px;overflow:hidden;margin:0 auto}
+.cam video{width:100%;height:100%;object-fit:cover;display:block}
+.cam .guide{position:absolute;left:17%;right:17%;top:6%;bottom:6%;border:4px solid var(--gold);border-radius:16px;box-shadow:0 0 0 9999px rgba(0,0,0,.38)}
+.shutter{width:80px;height:80px;border-radius:50%;border:6px solid #fff;background:var(--red);box-shadow:0 0 0 3px var(--gold)}
+.cropwrap{display:flex;justify-content:center}
+.cropbox-host{position:relative;display:inline-block;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden;border-radius:12px}
+.cropbox-host img{display:block;max-width:100%;max-height:58vh;-webkit-touch-callout:none;pointer-events:none}
+.cropbox{position:absolute;border:3px solid var(--gold);box-shadow:0 0 0 9999px rgba(0,0,0,.45);touch-action:none;cursor:move}
+.cropbox .h{position:absolute;width:36px;height:36px;background:var(--gold);border:3px solid #fff;border-radius:50%}
+.cropbox .tl{left:-6px;top:-6px}.cropbox .tr{right:-6px;top:-6px}.cropbox .bl{left:-6px;bottom:-6px}.cropbox .br{right:-6px;bottom:-6px}
+.linkrow .btn{flex:1 1 160px}
+.hr{height:1px;background:var(--line)}
+@media (min-width:700px){.grid{--cols:4!important}.grid.c3{--cols:6!important}.hero h1{font-size:40px}.soldier{width:100px;height:178px}}
+@media (min-width:1000px){.grid{--cols:5!important}.grid.c3{--cols:7!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <defs>
+  <symbol id="soldier" viewBox="0 0 120 214">
+   <!-- original nutcracker soldier: tall hat, plume, moustache, red coat -->
+   <path d="M60 2c6 0 9 6 7 12-2 5-7 6-7 6s-5-1-7-6c-2-6 1-12 7-12z" fill="#f6efe3"/>
+   <rect x="34" y="16" width="52" height="50" rx="6" fill="#1a1410"/>
+   <rect x="34" y="52" width="52" height="9" fill="#d4a63c"/>
+   <path d="M50 26l10-6 10 6-10 14z" fill="#d4a63c"/>
+   <rect x="38" y="61" width="44" height="40" rx="9" fill="#f2c9a5"/>
+   <circle cx="50" cy="76" r="3.4" fill="#1a1410"/><circle cx="70" cy="76" r="3.4" fill="#1a1410"/>
+   <circle cx="44" cy="86" r="4" fill="#e79a8c" opacity=".8"/><circle cx="76" cy="86" r="4" fill="#e79a8c" opacity=".8"/>
+   <path d="M44 88c6-5 11-3 16 1 5-4 10-6 16-1-4 6-11 7-16 3-5 4-12 3-16-3z" fill="#fffaf2"/>
+   <path d="M42 96c4 14 32 14 36 0v8c-4 12-32 12-36 0z" fill="#fffaf2"/>
+   <rect x="52" y="93" width="16" height="7" rx="2" fill="#7a2a1a"/>
+   <path d="M30 108h60l6 54H24z" fill="#b51f2a"/>
+   <rect x="56" y="108" width="8" height="54" fill="#d4a63c"/>
+   <circle cx="60" cy="118" r="3" fill="#fff3c4"/><circle cx="60" cy="132" r="3" fill="#fff3c4"/><circle cx="60" cy="146" r="3" fill="#fff3c4"/>
+   <rect x="24" y="148" width="72" height="9" fill="#f6efe3"/>
+   <rect x="52" y="148" width="16" height="9" fill="#d4a63c"/>
+   <rect x="16" y="110" width="14" height="44" rx="7" fill="#b51f2a"/><rect x="90" y="110" width="14" height="44" rx="7" fill="#b51f2a"/>
+   <circle cx="23" cy="157" r="7" fill="#f6efe3"/><circle cx="97" cy="157" r="7" fill="#f6efe3"/>
+   <rect x="95" y="96" width="5" height="68" rx="2" fill="#d4a63c"/>
+   <rect x="34" y="162" width="22" height="30" fill="#1d3b6e"/><rect x="64" y="162" width="22" height="30" fill="#1d3b6e"/>
+   <rect x="32" y="188" width="26" height="14" rx="4" fill="#1a1410"/><rect x="62" y="188" width="26" height="14" rx="4" fill="#1a1410"/>
+   <rect x="22" y="200" width="76" height="12" rx="5" fill="#18452f"/>
+  </symbol>
+  <symbol id="i-lib" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></symbol>
+  <symbol id="i-fold" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.6" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 16l5-5 4 4 3-3 6 6" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+ </defs>
+</svg>
+
+<main id="main"></main>
+
+<nav class="tabs" id="tabs" aria-label="Sections">
+ <button data-tab="library" aria-current="page"><svg><use href="#i-lib"/></svg>Library</button>
+ <button data-tab="folders"><svg><use href="#i-fold"/></svg>Folders</button>
+ <button class="scanbtn" id="scanTab" aria-label="Scan a nutcracker"><span class="ring"><svg><use href="#i-cam"/></svg></span>Scan</button>
+ <button data-tab="catalog"><svg><use href="#i-book"/></svg>Catalog</button>
+ <button data-tab="more"><svg><use href="#i-more"/></svg>More</button>
+</nav>
+
+<input type="file" id="fileCam" accept="image/*" capture="environment" class="sr" tabindex="-1">
+<input type="file" id="fileLib" accept="image/*" class="sr" tabindex="-1">
+<input type="file" id="fileJson" accept="application/json,.json" class="sr" tabindex="-1">
+
+<script>
+{
+/* ---------- tiny helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>n==null||isNaN(n)?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:n>=1000?0:2}).format(n);
+const num=v=>{if(v===''||v==null)return null;const n=parseFloat(String(v).replace(/[^0-9.]/g,''));return isNaN(n)?null:n};
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const PLACEHOLDER='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 150"><rect width="120" height="150" fill="#f3e4bd"/><g transform="translate(35 18) scale(.42)"><rect x="34" y="16" width="52" height="50" rx="6" fill="#b8892a"/><rect x="38" y="61" width="44" height="40" rx="9" fill="#d9b98a"/><path d="M30 108h60l6 54H24z" fill="#b8892a"/><rect x="22" y="200" width="76" height="12" rx="5" fill="#b8892a"/></g></svg>');
+const BLANK='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+const CDN='https://cdn11.bigcommerce.com/s-05hxp48rsp/images/stencil/';
+const photoUrls=new Map(),photoP=new Map();
+function catSrc(id,big){const c=S.byId.get(+id);return c&&c.p?CDN+(big?'640w':'320w')+'/products/'+c.p:PLACEHOLDER}
+function srcA(src,big){src=String(src||'');if(src.startsWith('kimg:'))return `src="${esc(catSrc(src.slice(5),big))}"`;
+  if(src.startsWith('idb:')){const id=src.slice(4);const u=photoUrls.get(id);return u?`src="${u}"`:`src="${BLANK}" data-p="${esc(id)}"`}
+  return `src="${esc(src)}"`}
+function photoBlobUrl(id){if(photoUrls.has(id))return Promise.resolve(photoUrls.get(id));
+  if(!photoP.has(id))photoP.set(id,(IDB?idbGet('photos',id):Promise.resolve(null)).then(b=>{if(!b)return null;const u=URL.createObjectURL(b);photoUrls.set(id,u);return u}).catch(()=>null));return photoP.get(id)}
+function hydrate(root){for(const im of (root.querySelectorAll?root.querySelectorAll('img[data-p]'):[])){const id=im.dataset.p;im.removeAttribute('data-p');photoBlobUrl(id).then(u=>{im.src=u||PLACEHOLDER})}}
+new MutationObserver(ms=>{for(const m of ms)for(const n of m.addedNodes){if(n.nodeType!==1)continue;if(n.matches&&n.matches('img[data-p]'))hydrate(n.parentNode||document);else hydrate(n)}}).observe(document.body,{childList:true,subtree:true});
+let toastT;function toast(msg){let t=$('.toast');if(!t){t=document.createElement('div');t.className='toast';t.setAttribute('role','status');document.body.append(t)}t.textContent=msg;t.classList.remove('hide');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.add('hide'),2600)}
+
+/* ---------- state ---------- */
+const S={cat:null,byId:new Map(),bySku:new Map(),folderById:new Map(),items:{},cfolders:{},settings:{cols:2},
+ tab:'library',filter:'all',sort:'recent',q:'',folderSeg:'official',catLine:'all',catQ:'',stack:[],loaded:false,backend:'local',note:''};
+const lineShort={'Hollywood Nutcrackers™':'Hollywood','Kurt Adler Nutcrackers':'Kurt Adler','Licensed Nutcrackers':'Licensed','Steinbach Nutcrackers':'Steinbach'};
+
+/* ---------- storage (kept on this phone) ---------- */
+let IDB=null;
+function idbOpen(){return new Promise((res,rej)=>{const r=indexedDB.open('nutcracker-keeper',1);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('kv'))d.createObjectStore('kv');if(!d.objectStoreNames.contains('photos'))d.createObjectStore('photos')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);r.onblocked=()=>rej(new Error('blocked'))})}
+function idbReq(store,mode,fn){return new Promise((res,rej)=>{const t=IDB.transaction(store,mode);let out;const r=fn(t.objectStore(store));if(r)r.onsuccess=()=>{out=r.result};t.oncomplete=()=>res(out);t.onerror=t.onabort=()=>rej(t.error)})}
+const idbGet=(st,k)=>idbReq(st,'readonly',o=>o.get(k));
+const idbPut=(st,k,v)=>idbReq(st,'readwrite',o=>o.put(v,k));
+const idbDel=(st,k)=>idbReq(st,'readwrite',o=>o.delete(k));
+function idbAll(st){return new Promise((res,rej)=>{const out={};const t=IDB.transaction(st,'readonly');const c=t.objectStore(st).openCursor();c.onsuccess=()=>{const cur=c.result;if(cur){out[cur.key]=cur.value;cur.continue()}};t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error)})}
+const writeChains={};
+function persist(key,data){
+  if(!IDB){saveLocal();return Promise.resolve()}
+  writeChains[key]=(writeChains[key]||Promise.resolve()).then(()=>data===null?idbDel('kv',key):idbPut('kv',key,JSON.parse(JSON.stringify(data)))).catch(e=>{console.warn(e);toast(e&&e.name==='QuotaExceededError'?'Phone storage is full — remove some photos.':'Could not save on this phone.')});
+  return writeChains[key];
+}
+function saveLocal(){try{localStorage.setItem('nk-data',JSON.stringify({items:S.items,cfolders:S.cfolders,settings:S.settings}))}catch(e){}}
+function loadLocal(){try{const d=JSON.parse(localStorage.getItem('nk-data')||'{}');S.items=d.items||{};S.cfolders=d.cfolders||{};S.settings=Object.assign({cols:2},d.settings||{})}catch(e){}}
+const saveTimers={};
+function saveItem(key,delay=0){clearTimeout(saveTimers[key]);delete saveTimers[key];const go=()=>{delete saveTimers[key];const it=S.items[key];persist('item_'+key,it?it:null)};if(delay)saveTimers[key]=setTimeout(go,delay);else go()}
+function saveFolder(id){persist('folder_'+id,S.cfolders[id]||null)}
+function saveSettings(){persist('settings',S.settings)}
+async function initBackend(){
+  try{IDB=await idbOpen();const all=await idbAll('kv');
+    for(const [k,v] of Object.entries(all)){if(k.startsWith('item_'))S.items[k.slice(5)]=v;else if(k.startsWith('folder_'))S.cfolders[k.slice(7)]=v;else if(k==='settings')S.settings=Object.assign({cols:2},v)}
+    S.backend='idb';
+    try{if(navigator.storage&&navigator.storage.persist)S.persisted=await navigator.storage.persist()}catch(e){}
+  }catch(e){console.warn(e);S.note='This browser is blocking storage (Private Browsing?), so your collection may not be kept. Open it in normal Safari.';loadLocal()}
+}
+function subscribe(){S.loaded=true;render()}
+
+/* ---------- catalog helpers ---------- */
+const keyFor=catId=>'ka-'+catId;
+const ownedCat=catId=>S.items[keyFor(catId)];
+function catOf(it){return it&&it.catId!=null?S.byId.get(it.catId):null}
+function photoOf(it,cat){
+  cat=cat||catOf(it);
+  if(it){
+    if(it.useAlt&&it.photo&&it.photo.url)return it.photo.url;
+    if(cat)return cat.img;
+    if(it.online&&it.online.url)return it.online.url;
+    if(it.photo&&it.photo.url)return it.photo.url;
+    return PLACEHOLDER;
+  }
+  return cat?cat.img:PLACEHOLDER;
+}
+function nameOf(it){const c=catOf(it);if(c)return c.short;return (it.custom&&(it.custom.name||it.custom.brand))||'Unnamed nutcracker'}
+function fullNameOf(it){const c=catOf(it);if(c)return c.name;const x=it.custom||{};return [x.brand,x.name].filter(Boolean).join(' — ')||'Unnamed nutcracker'}
+function msrpOf(it){if(it&&it.msrp!=null)return it.msrp;const c=catOf(it);if(c&&c.msrp!=null)return c.msrp;return null}
+function paidOf(it){return it.paid!=null?it.paid:msrpOf(it)}
+const qtyOf=it=>Math.max(1,it.qty||1);
+function brandOf(it){return it.kind==='other'?((it.custom&&it.custom.brand)||'Other brand'):'Kurt Adler'}
+function itemsInOfficial(fid){const f=S.folderById.get(fid);return f?f.items:[]}
+
+/* ---------- filtering ---------- */
+function ownedList(){return Object.entries(S.items).map(([k,v])=>Object.assign({key:k},v))}
+function applyFilter(list,f){
+  if(f==='all')return list;
+  if(f==='brand:ka')return list.filter(i=>i.kind!=='other');
+  if(f==='brand:other')return list.filter(i=>i.kind==='other');
+  if(f.startsWith('cf:')){const id=f.slice(3);return list.filter(i=>(i.folders||[]).includes(id))}
+  if(f.startsWith('of:')){const id=f.slice(3);return list.filter(i=>{const c=catOf(i);return c&&c.f.includes(id)})}
+  if(f.startsWith('line:')){const ln=f.slice(5);return list.filter(i=>{const c=catOf(i);return c&&c.f.some(x=>S.folderById.get(x).line===ln)})}
+  return list;
+}
+function sortList(list,s){
+  const by=fn=>list.sort((a,b)=>fn(a,b));
+  if(s==='name')return by((a,b)=>nameOf(a).localeCompare(nameOf(b)));
+  if(s==='price')return by((a,b)=>(paidOf(b)??-1)-(paidOf(a)??-1));
+  if(s==='series')return by((a,b)=>{const ca=catOf(a),cb=catOf(b);const fa=ca?ca.f[0]:'zz',fb=cb?cb.f[0]:'zz';return fa.localeCompare(fb)||((ca&&ca.series)||999)-((cb&&cb.series)||999)||nameOf(a).localeCompare(nameOf(b))});
+  return by((a,b)=>(b.added||0)-(a.added||0));
+}
+function totals(list){let n=0,spent=0,missing=0,market=0,mk=0;for(const i of list){const q=qtyOf(i);n+=q;const p=paidOf(i);if(p==null)missing++;else spent+=p*q;if(i.market!=null){market+=i.market*q;mk++}}return{n,spent,missing,market,mk}}
+function filterLabel(f){
+  if(f==='all')return'All my nutcrackers';if(f==='brand:ka')return'Kurt Adler';if(f==='brand:other')return'Other brands';
+  if(f.startsWith('cf:'))return(S.cfolders[f.slice(3)]||{}).name||'Folder';
+  if(f.startsWith('of:')){const x=S.folderById.get(f.slice(3));return x?x.name:'Folder'}
+  if(f.startsWith('line:'))return f.slice(5);return''
+}
+
+/* ---------- rendering ---------- */
+const main=$('#main');
+function soldierSvg(cls='soldier'){return `<svg class="${cls}" viewBox="0 0 120 214" aria-hidden="true"><use href="#soldier"/></svg>`}
+function snowHtml(){let h='';for(let i=0;i<14;i++)h+=`<i style="left:${(i*7.3+3)%100}%;animation-duration:${6+((i*37)%7)}s;animation-delay:-${(i*1.7)%8}s;width:${3+(i%3)*2}px;height:${3+(i%3)*2}px"></i>`;return `<div class="snow" aria-hidden="true">${h}</div>`}
+function tile(it,opts={}){
+  const c=catOf(it);const src=photoOf(it,c);const cover=(it.useAlt&&it.photo)||(!c&&!it.online);
+  return `<button class="tile" data-open="${esc(it.key)}"><div class="ph"><img loading="lazy" decoding="async" class="${cover?'cover':''}" ${srcA(src)} alt=""></div>
+  ${qtyOf(it)>1?`<span class="qty" aria-label="quantity">×${qtyOf(it)}</span>`:''}
+  <div class="nm">${esc(nameOf(it))}</div></button>`;
+}
+function catTile(c,opts={}){
+  const own=ownedCat(c.id);
+  const src=own?photoOf(Object.assign({key:keyFor(c.id)},own),c):c.img;
+  return `<button class="tile ${opts.grey&&!own?'missing':''}" data-cat="${c.id}">
+   <div class="ph"><img loading="lazy" decoding="async" class="${own&&own.useAlt&&own.photo?'cover':''}" ${srcA(src)} alt=""></div>
+   ${opts.num&&c.series?`<span class="num">#${c.series}</span>`:''}
+   ${opts.check&&own?`<span class="own" aria-label="owned"><svg width="20" height="20"><use href="#i-check"/></svg></span>`:''}
+   <div class="nm">${esc(c.short)}</div></button>`;
+}
+function filterOptions(sel){
+  const o=(v,l)=>`<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(l)}</option>`;
+  const list=ownedList();
+  let h=o('all','All my nutcrackers')+o('brand:ka','Kurt Adler only')+o('brand:other','Other brands only');
+  const cf=Object.entries(S.cfolders).sort((a,b)=>a[1].name.localeCompare(b[1].name));
+  if(cf.length)h+=`<optgroup label="My folders">${cf.map(([id,f])=>o('cf:'+id,`${f.name} (${applyFilter(list,'cf:'+id).length})`)).join('')}</optgroup>`;
+  for(const ln of S.cat.lines){
+    const fs=S.cat.folders.filter(f=>f.line===ln);
+    h+=`<optgroup label="${esc(ln.replace('™',''))}">${o('line:'+ln,'All '+lineShort[ln])}${fs.map(f=>{const n=f.items.filter(id=>ownedCat(id)).length;return o('of:'+f.id,`${f.name} (${n}/${f.items.length})`)}).join('')}</optgroup>`;
+  }
+  return h;
+}
+function libList(){const all=ownedList();const words=S.q.toLowerCase().split(/\s+/).filter(Boolean);
+  return sortList(applyFilter(all,S.filter).filter(i=>{if(!words.length)return true;const t=(nameOf(i)+' '+fullNameOf(i)+' '+((catOf(i)||{}).sku||'')+' '+((i.custom||{}).sku||'')+' '+brandOf(i)).toLowerCase();return words.every(w=>t.includes(w))}),S.sort)}
+function libGridHtml(list,all){const cols=S.settings.cols===3?3:2;
+  return !S.loaded?`<div class="empty"><p>Opening the toy cabinet…</p></div>`:
+     list.length?`<div class="grid ${cols===3?'c3':''}" style="--cols:${cols}">${list.map(i=>tile(i)).join('')}</div>`:
+     all.length?`<div class="empty"><h3>Nothing here yet</h3><p>No nutcrackers match this view.</p></div>`:
+     `<div class="empty">${soldierSvg('')}<h3>Your brigade awaits</h3><p>Tap <b>Scan</b> to add your first nutcracker from a photo, or browse the <b>Catalog</b>.</p><button class="btn primary" id="firstScan">Scan a nutcracker</button></div>`}
+function renderLibrary(){
+  const all=ownedList();const list=libList();
+  const t=totals(applyFilter(all,S.filter));
+  const cols=S.settings.cols===3?3:2;
+  main.innerHTML=`<header class="hero">${snowHtml()}<div class="hero-row"><div class="txt"><h1>Nutcracker Keeper</h1><div class="sub">${esc(filterLabel(S.filter))}</div></div>${soldierSvg()}</div>
+   <div class="stats"><div class="stat"><b>${t.n}</b><span>owned</span></div><div class="stat"><b>${money(t.spent)}</b><span>total spent${t.missing?` · ${t.missing} unpriced`:''}</span></div><div class="stat"><b>${t.mk?money(t.market):'—'}</b><span>${t.mk?`market value · ${t.mk} checked`:'market value'}</span></div></div></header>
+  <div class="wrap">
+   ${S.note?`<div class="banner">${esc(S.note)}</div>`:''}
+   <div class="toolbar" style="margin-top:12px">
+    <div class="field"><label for="flt">Show</label><select id="flt">${filterOptions(S.filter)}</select></div>
+    <div class="row" style="flex-wrap:nowrap"><input type="search" id="q" placeholder="Search name or item #" value="${esc(S.q)}" aria-label="Search my nutcrackers" style="flex:1">
+     <select id="srt" aria-label="Sort" style="width:auto;flex:none;max-width:44%"><option value="recent">Newest</option><option value="name">A–Z</option><option value="series">By series</option><option value="price">Price</option></select></div>
+    <div class="row" style="justify-content:space-between"><span class="note" id="libCount">${list.length} shown</span>
+     <button class="btn small" id="colsBtn" aria-label="Change photo size">${cols===2?'Smaller photos':'Bigger photos'}</button></div>
+   </div>
+   <div id="libGrid">${libGridHtml(list,all)}</div>
+  </div>`;
+  $('#srt').value=S.sort;
+  $('#flt').onchange=e=>{S.filter=e.target.value;render()};
+  $('#srt').onchange=e=>{S.sort=e.target.value;render()};
+  const q=$('#q');q.oninput=()=>{S.q=q.value;const l=libList();$('#libGrid').innerHTML=libGridHtml(l,ownedList());$('#libCount').textContent=l.length+' shown';bindMainClicks()};
+  $('#colsBtn').onclick=()=>{S.settings.cols=cols===2?3:2;saveSettings();render()};
+}
+function folderRow(f,ownedN,total,cover,attrs){
+  const pct=total?Math.round(ownedN/total*100):0;
+  return `<button class="frow" ${attrs}><div class="cv"><img loading="lazy" ${srcA(cover)} alt=""></div><div class="fx"><div class="fn">${esc(f)}</div>
+   <div class="fc">${total==null?`${ownedN} nutcracker${ownedN===1?'':'s'}`:`${ownedN} of ${total} owned`}</div>${total!=null?`<div class="bar"><i style="width:${pct}%"></i></div>`:''}</div><span class="chev">›</span></button>`;
+}
+function renderFolders(){
+  const seg=S.folderSeg;
+  let body='';
+  if(seg==='official'){
+    for(const ln of S.cat.lines){
+      const fs=S.cat.folders.filter(f=>f.line===ln);
+      const own=fs.reduce((a,f)=>a+f.items.filter(id=>ownedCat(id)).length,0);
+      body+=`<div class="linehead"><h2>${esc(ln.replace('™',''))}</h2><span class="pill">${fs.length} folders</span></div><div class="flist">`+
+      fs.map(f=>{const n=f.items.filter(id=>ownedCat(id)).length;const firstOwned=f.items.find(id=>ownedCat(id));const c=S.byId.get(firstOwned||f.items[0]);
+        return folderRow(f.name,n,f.items.length,c?c.img:PLACEHOLDER,`data-of="${esc(f.id)}"`)}).join('')+`</div>`;
+    }
+  }else{
+    const list=ownedList();
+    const cf=Object.entries(S.cfolders).sort((a,b)=>(a[1].created||0)-(b[1].created||0));
+    const other=list.filter(i=>i.kind==='other');
+    body=`<div class="row" style="margin-top:14px"><button class="btn primary block" id="newFolder">+ New folder</button></div><div class="flist" style="margin-top:12px">`+
+      cf.map(([id,f])=>{const its=list.filter(i=>(i.folders||[]).includes(id));return folderRow(f.name,its.length,null,its[0]?photoOf(its[0]):PLACEHOLDER,`data-cf="${esc(id)}"`)}).join('')+
+      folderRow('Other brands (automatic)',other.length,null,other[0]?photoOf(other[0]):PLACEHOLDER,'data-cf="__other"')+`</div>`+
+      (cf.length?'':`<p class="note" style="margin-top:12px">Make folders for anything you like — “Mantel display”, “Gifts from Mom”, “Wish list”. Add nutcrackers from inside a folder, or from any nutcracker’s detail page.</p>`);
+  }
+  main.innerHTML=`<header class="pagehead"><h1>Folders</h1><div class="sub">Official Kurt Adler folders fill in automatically</div></header>
+  <div class="wrap"><div class="seg" role="group" aria-label="Folder type"><button data-seg="official" aria-pressed="${seg==='official'}">Official</button><button data-seg="mine" aria-pressed="${seg==='mine'}">My folders</button></div>${body}</div>`;
+  $$('[data-seg]').forEach(b=>b.onclick=()=>{S.folderSeg=b.dataset.seg;render()});
+  const nf=$('#newFolder');if(nf)nf.onclick=async()=>{const name=await askText('New folder','Folder name','');if(name){const id=uid();S.cfolders[id]={name,created:Date.now()};saveFolder(id);render();toast('Folder created')}};
+}
+function renderOfficialFolder(fid){
+  const f=S.folderById.get(fid);const ids=f.items;const n=ids.filter(id=>ownedCat(id)).length;
+  const cols=S.settings.cols===3?3:2;const showNum=ids.some(id=>S.byId.get(id).series);
+  main.innerHTML=`<header class="pagehead"><button class="back" data-back>‹ Folders</button><h1>${esc(f.name)}</h1><div class="sub">${esc(f.line.replace('™',''))} · ${n} of ${ids.length} owned</div></header>
+  <div class="wrap"><div class="bar" style="height:10px"><i style="width:${ids.length?n/ids.length*100:0}%"></i></div>
+   <p class="note">${showNum?'Shown in series order. ':''}Grey ones are pieces you don’t own yet — tap any to see details or add it.</p>
+   <div class="grid ${cols===3?'c3':''}" style="--cols:${cols}">${ids.map(id=>catTile(S.byId.get(id),{grey:true,num:showNum})).join('')}</div></div>`;
+}
+function renderCustomFolder(id){
+  const list=ownedList();const other=id==='__other';
+  const f=other?{name:'Other brands'}:S.cfolders[id];if(!f){S.stack.pop();return render()}
+  const its=sortList(other?list.filter(i=>i.kind==='other'):list.filter(i=>(i.folders||[]).includes(id)),'name');
+  const cols=S.settings.cols===3?3:2;
+  main.innerHTML=`<header class="pagehead"><button class="back" data-back>‹ My folders</button><h1>${esc(f.name)}</h1><div class="sub">${its.length} nutcracker${its.length===1?'':'s'}</div></header>
+  <div class="wrap">${other?`<p class="note">Every non–Kurt Adler nutcracker lands here automatically.</p>`:`<div class="row"><button class="btn primary" id="addTo" style="flex:1">+ Add nutcrackers</button><button class="btn" id="renF">Rename</button><button class="btn danger" id="delF">Delete</button></div>`}
+  ${its.length?`<div class="grid ${cols===3?'c3':''}" style="--cols:${cols}">${its.map(i=>tile(i)).join('')}</div>`:`<div class="empty"><h3>Empty folder</h3><p>${other?'Scan a nutcracker with “Other brand” to fill this.':'Tap “Add nutcrackers” to pick from your collection.'}</p></div>`}</div>`;
+  if(!other){
+    $('#addTo').onclick=()=>openFolderPicker(id);
+    $('#renF').onclick=async()=>{const n=await askText('Rename folder','Folder name',f.name);if(n){f.name=n;saveFolder(id);render()}};
+    $('#delF').onclick=async()=>{if(await askConfirm('Delete this folder?',`“${f.name}” will be removed. Your nutcrackers stay in your library.`,'Delete folder',true)){
+      for(const [k,it] of Object.entries(S.items)){if((it.folders||[]).includes(id)){it.folders=it.folders.filter(x=>x!==id);saveItem(k)}}
+      delete S.cfolders[id];saveFolder(id);if(S.filter==='cf:'+id)S.filter='all';S.stack.pop();render();toast('Folder deleted')}};
+  }
+}
+function catList(){const words=S.catQ.toLowerCase().split(/\s+/).filter(Boolean);let list=S.cat.items;
+  if(S.catLine!=='all')list=list.filter(c=>c.f.some(x=>S.folderById.get(x).line===S.catLine));
+  if(words.length)list=list.filter(c=>{const t=(c.name+' '+c.sku).toLowerCase();return words.every(w=>t.includes(w))});return list}
+function catResHtml(list,cols){const shown=list.slice(0,S.catLimit||60);
+  return `<p class="note">${list.length} match${list.length===1?'':'es'}</p><div class="grid ${cols===3?'c3':''}" style="--cols:${cols}">${shown.map(c=>catTile(c,{check:true})).join('')}</div>
+   ${list.length>shown.length?`<button class="btn block" id="moreCat" style="margin-top:14px">Show more (${list.length-shown.length} left)</button>`:''}`}
+function bindCatMore(){const m=$('#moreCat');if(m)m.onclick=()=>{S.catLimit=(S.catLimit||60)+90;$('#catRes').innerHTML=catResHtml(catList(),S.settings.cols===3?3:2);bindMainClicks();bindCatMore()}}
+function renderCatalog(){
+  const list=catList();
+  const cols=S.settings.cols===3?3:2;
+  main.innerHTML=`<header class="pagehead"><h1>Kurt Adler Catalog</h1><div class="sub">${S.cat.items.length} nutcrackers from kurtadler.com · tap to add</div></header>
+  <div class="wrap"><input type="search" id="cq" placeholder="Search name or item # (e.g. HA0804)" value="${esc(S.catQ)}" aria-label="Search catalog">
+   <div class="chips" style="margin-top:10px" role="group" aria-label="Line">${['all',...S.cat.lines].map(l=>`<button class="chip" data-line="${esc(l)}" aria-pressed="${S.catLine===l}">${l==='all'?'All':lineShort[l]}</button>`).join('')}</div>
+   <div id="catRes">${catResHtml(list,cols)}</div>
+   <p class="note" style="margin-top:16px">Kurt Adler’s site lists the current range. If yours is an older retired piece, use <b>Scan → Kurt Adler</b> and choose “Not in the catalog” to add it with your own photo.</p></div>`;
+  const cq=$('#cq');cq.oninput=()=>{S.catQ=cq.value;S.catLimit=60;$('#catRes').innerHTML=catResHtml(catList(),cols);bindMainClicks();bindCatMore()};
+  $$('[data-line]').forEach(b=>b.onclick=()=>{S.catLine=b.dataset.line;S.catLimit=60;render()});
+  bindCatMore();
+}
+function renderMore(){
+  const t=totals(ownedList());
+  main.innerHTML=`<header class="pagehead"><h1>More</h1><div class="sub">Backups, prices and help</div></header>
+  <div class="wrap" style="display:grid;gap:14px;margin-top:4px">
+   <div class="box"><h3>Your collection</h3><div class="dl"><dt>Nutcrackers</dt><dd>${t.n}</dd><dt>Total spent</dt><dd>${money(t.spent)}</dd><dt>Market value</dt><dd>${t.mk?money(t.market)+` (${t.mk} checked)`:'Not checked yet'}</dd><dt>Saved on</dt><dd>${IDB?'This phone — save a backup now and then':'Not saved — this browser is blocking storage'}</dd></div></div>
+   <div class="box"><h3>Backup</h3><p class="note" style="margin:0">Everything lives on this phone. Save a backup file (it includes your own photos) to Files or iCloud Drive now and then, so nothing is lost if the phone is replaced.</p>
+    <div class="linkrow"><button class="btn gold" id="exp">Save backup file</button><button class="btn" id="imp">Restore backup</button></div></div>
+   <div class="box"><h3>About prices</h3><p style="margin:0;font-size:16px"><b>MSRP</b> is Kurt Adler’s own suggested retail price, from their listings on Faire (their wholesale shop). Where it isn’t loaded yet, tap <b>Look up MSRP</b> on the nutcracker and type the “MSRP $…” figure into its MSRP box. “Total spent” uses what you paid if you entered it, otherwise MSRP. <b>Market value</b> is what similar pieces sell for now — tap “Check eBay sold prices” on any nutcracker, then type the value you see.</p></div>
+   <div class="box"><h3>Put it on your Home Screen</h3><p style="margin:0;font-size:16px">Open this page in Safari, tap the Share button, then <b>Add to Home Screen</b>. It opens like an app.</p></div>
+   <div class="box"><h3>Photo size</h3><div class="seg"><button data-cols="2" aria-pressed="${S.settings.cols!==3}">Big photos</button><button data-cols="3" aria-pressed="${S.settings.cols===3}">Small photos</button></div></div>
+  </div>`;
+  $$('[data-cols]').forEach(b=>b.onclick=()=>{S.settings.cols=+b.dataset.cols;saveSettings();render()});
+  $('#exp').onclick=async()=>{const b=$('#exp');b.disabled=true;b.textContent='Preparing…';
+    try{const photos={};if(IDB){const all=await idbAll('photos');for(const [k,v] of Object.entries(all))photos[k]=await blobToDataUrl(v)}
+      const json=JSON.stringify({app:'nutcracker-keeper',version:2,exported:new Date().toISOString(),items:S.items,folders:S.cfolders,settings:S.settings,photos});
+      const name=`nutcracker-collection-${today()}.json`,file=new File([json],name,{type:'application/json'});
+      let shared=false;try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});shared=true}}catch(e){if(e&&e.name==='AbortError')shared=true}
+      if(!shared){const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000)}
+    }catch(e){console.warn(e);toast('Could not make the backup.')}finally{b.disabled=false;b.textContent='Save backup file'}};
+  $('#imp').onclick=()=>{const f=$('#fileJson');f.value='';f.onchange=async()=>{const file=f.files[0];if(!file)return;try{const d=JSON.parse(await file.text());if(d.app!=='nutcracker-keeper')throw 0;
+      if(!await askConfirm('Restore this backup?',`It has ${Object.keys(d.items||{}).length} nutcrackers and ${Object.keys(d.folders||{}).length} folders. They’ll be merged into your collection (matching entries are replaced).`,'Restore'))return;
+      if(IDB&&d.photos){for(const [k,v] of Object.entries(d.photos)){try{const b=await (await fetch(v)).blob();await idbPut('photos',k,b);photoUrls.delete(k);photoP.delete(k)}catch(e){}}}
+      for(const [k,v] of Object.entries(d.folders||{})){S.cfolders[k]=v;saveFolder(k)}for(const [k,v] of Object.entries(d.items||{})){S.items[k]=v;saveItem(k)}render();toast('Backup restored')}catch(e){toast('That file isn’t a Nutcracker Keeper backup.')}};f.click()};
+}
+let lastSig='';
+function render(){
+  if(!S.cat){main.innerHTML=`<div class="empty" style="padding-top:80px">${soldierSvg('')}<p>Loading the catalog…</p></div>`;return}
+  const top=S.stack[S.stack.length-1];
+  try{if(location.hash.slice(1)!==S.tab)history.replaceState(null,'','#'+S.tab)}catch(e){}
+  $$('#tabs [data-tab]').forEach(b=>{if(b.dataset.tab===S.tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+  if(top&&top.type==='of')renderOfficialFolder(top.id);
+  else if(top&&top.type==='cf')renderCustomFolder(top.id);
+  else ({library:renderLibrary,folders:renderFolders,catalog:renderCatalog,more:renderMore})[S.tab]();
+  bindMainClicks();
+  refreshOpenDetail();
+}
+function renderSoft(){ // re-render when data changes but keep scroll, and don't clobber focused inputs
+  const a=document.activeElement;if(a&&main.contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){if(a.id==='q'){const l=libList();$('#libGrid').innerHTML=libGridHtml(l,ownedList());bindMainClicks()}refreshOpenDetail();return}
+  const y=scrollY;render();scrollTo(0,y);
+}
+function bindMainClicks(){
+  const fs=$('#firstScan');if(fs)fs.onclick=openScanChooser;
+  $$('[data-open]',main).forEach(b=>b.onclick=()=>openDetail({key:b.dataset.open}));
+  $$('[data-cat]',main).forEach(b=>b.onclick=()=>openDetail({catId:+b.dataset.cat}));
+  $$('[data-of]',main).forEach(b=>b.onclick=()=>{S.stack.push({type:'of',id:b.dataset.of});render();scrollTo(0,0)});
+  $$('[data-cf]',main).forEach(b=>b.onclick=()=>{S.stack.push({type:'cf',id:b.dataset.cf});render();scrollTo(0,0)});
+  $$('[data-back]',main).forEach(b=>b.onclick=()=>{S.stack.pop();render();scrollTo(0,0)});
+}
+$$('#tabs [data-tab]').forEach(b=>b.onclick=()=>{const t=b.dataset.tab;if(S.tab===t&&!S.stack.length){scrollTo({top:0,behavior:'smooth'});return}S.tab=t;S.stack=[];try{history.replaceState(null,'','#'+t)}catch(e){}render();scrollTo(0,0)});
+$('#scanTab').onclick=()=>openScanChooser();
+
+/* ---------- sheets & dialogs ---------- */
+const layers=[];
+function openSheet(title,html,{small=false,onClose}={}){
+  const L=document.createElement('div');L.className='layer';
+  L.innerHTML=`<div class="sheet ${small?'small':''}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sheet-head"><h2>${esc(title)}</h2><button class="xbtn" aria-label="Close">×</button></div><div class="sheet-body">${html}</div></div>`;
+  document.body.append(L);layers.push(L);document.body.style.overflow='hidden';
+  const close=()=>{L.remove();const i=layers.indexOf(L);if(i>-1)layers.splice(i,1);if(!layers.length)document.body.style.overflow='';onClose&&onClose()};
+  L._close=close;$('.xbtn',L).onclick=close;L.addEventListener('click',e=>{if(e.target===L)close()});
+  setTimeout(()=>$('.xbtn',L).focus({preventScroll:true}),30);
+  return {el:L,body:$('.sheet-body',L),close,setTitle:t=>$('.sheet-head h2',L).textContent=t};
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&layers.length)layers[layers.length-1]._close()});
+function askConfirm(title,text,okLabel='OK',danger=false){return new Promise(res=>{let done=false;
+  const s=openSheet(title,`<p style="margin:0">${esc(text)}</p><div class="two"><button class="btn" data-no>Cancel</button><button class="btn ${danger?'danger':'primary'}" data-yes>${esc(okLabel)}</button></div>`,{small:true,onClose:()=>{if(!done)res(false)}});
+  $('[data-no]',s.el).onclick=()=>s.close();$('[data-yes]',s.el).onclick=()=>{done=true;s.close();res(true)}})}
+function askText(title,label,val){return new Promise(res=>{let done=false;
+  const s=openSheet(title,`<form class="field" id="tf"><label for="tv">${esc(label)}</label><input type="text" id="tv" value="${esc(val)}" maxlength="60" autocomplete="off"><div class="two" style="margin-top:10px"><button type="button" class="btn" data-no>Cancel</button><button class="btn primary">Save</button></div></form>`,{small:true,onClose:()=>{if(!done)res(null)}});
+  const i=$('#tv',s.el);setTimeout(()=>i.focus(),60);$('[data-no]',s.el).onclick=()=>s.close();
+  $('#tf',s.el).onsubmit=e=>{e.preventDefault();const v=i.value.trim();if(!v){i.focus();return}done=true;s.close();res(v)}})}
+
+/* ---------- photos ---------- */
+function pickImage(fromCamera){return new Promise(res=>{const inp=fromCamera?$('#fileCam'):$('#fileLib');inp.value='';
+  const on=()=>{inp.removeEventListener('change',on);res(inp.files&&inp.files[0]||null)};inp.addEventListener('change',on);inp.click()})}
+function loadImg(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file);const im=new Image();im.onload=()=>res({im,u});im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('decode'))};im.src=u})}
+async function resizeToBlob(file,max,q=.85){
+  const {im,u}=await loadImg(file);const sc=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight));
+  const cv=document.createElement('canvas');cv.width=Math.round(im.naturalWidth*sc);cv.height=Math.round(im.naturalHeight*sc);
+  cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);
+  return await new Promise(r=>cv.toBlob(b=>r(b),'image/jpeg',q));
+}
+const blobToDataUrl=b=>new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b)});
+async function storePhoto(blob){ // returns {id,url}
+  if(IDB){const id=uid();await idbPut('photos',id,blob);photoUrls.set(id,URL.createObjectURL(blob));return{id,url:'idb:'+id}}
+  const small=await resizeToBlob(blob,700,.7);return{id:null,url:await blobToDataUrl(small)};
+}
+async function deletePhoto(p){if(p&&p.id&&IDB){try{await idbDel('photos',p.id);const u=photoUrls.get(p.id);if(u)URL.revokeObjectURL(u);photoUrls.delete(p.id);photoP.delete(p.id)}catch(e){}}}
+
+/* ---------- detail sheet ---------- */
+let openDet=null;
+function refreshOpenDetail(){if(openDet&&document.body.contains(openDet.s.el)){const a=document.activeElement;if(a&&openDet.s.el.contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))return;drawDetail()}}
+function openDetail(ref){
+  let key=ref.key,catId=ref.catId;
+  if(key&&S.items[key]&&S.items[key].catId!=null)catId=S.items[key].catId;
+  if(catId!=null&&!key)key=keyFor(catId);
+  const s=openSheet('Nutcracker','',{onClose:()=>{openDet=null}});
+  openDet={s,key,catId,view:null};drawDetail();
+}
+function ebayUrl(q){return 'https://www.ebay.com/sch/i.html?_nkw='+encodeURIComponent(q)+'&LH_Sold=1&LH_Complete=1'}
+function msrpUrl(c){return 'https://www.google.com/search?q='+encodeURIComponent('site:faire.com "Kurt S. Adler" '+c.sku+' MSRP')}
+function googleUrl(q,images){return 'https://www.google.com/search?'+(images?'tbm=isch&':'')+'q='+encodeURIComponent(q)}
+function drawDetail(){
+  const {s,key,catId}=openDet;const c=catId!=null?S.byId.get(catId):null;const it=S.items[key];
+  const owned=!!it;const st=s.el.querySelector('.sheet').scrollTop;
+  s.setTitle(owned?'In your collection':(c?'Not owned yet':'Nutcracker'));
+  const cur=photoOf(it?Object.assign({key},it):null,c);
+  const thumbs=[];
+  if(owned){
+    if(c)thumbs.push({k:'off',src:c.img,label:'Official',on:!it.useAlt});
+    else if(it.online)thumbs.push({k:'online',src:it.online.url,label:'Online',on:!it.useAlt});
+    if(it.photo)thumbs.push({k:'mine',src:it.photo.url,label:'My photo',on:it.useAlt||(!c&&!it.online)});
+  }
+  const x=it&&it.custom||{};
+  const folderNames=c?c.f.map(fid=>S.folderById.get(fid)):[];
+  const q=c?`Kurt Adler ${c.sku} ${c.short}`:[x.brand,x.name,x.sku].filter(Boolean).join(' ')+' nutcracker';
+  const ms=it?msrpOf(it):(c?c.msrp:null);
+  let h=`<div class="photo-big"><img ${srcA(cur,true)} alt="" style="${(it&&it.useAlt&&it.photo)||(!c&&it&&!it.online)?'object-fit:cover':''}"></div>`;
+  if(owned)h+=`<div class="thumbs" role="group" aria-label="Photo shown in library">${thumbs.map(t=>`<button class="thumb" data-ph="${t.k}" aria-pressed="${t.on}"><img ${srcA(t.src)} alt=""><span>${t.label}</span></button>`).join('')}
+    <button class="thumb" data-ph="new" aria-label="Add or replace my photo"><span style="height:84px;display:flex;align-items:center;justify-content:center;font-size:34px">+</span><span>${it.photo?'Replace':'Alt photo'}</span></button></div>
+    <p class="note" style="margin:-6px 0 0">The highlighted photo is the one shown in your library.${it.photo&&(c||it.online)?' <button class="btn small danger" data-ph="del" style="margin-left:6px">Remove my photo</button>':''}</p>`;
+  h+=`<div><h2 style="font-size:28px">${esc(c?c.short:nameOf(it))}</h2>${c?`<p style="margin:6px 0 0;color:var(--muted)">${esc(c.name)}</p>`:(x.brand?`<p style="margin:6px 0 0;color:var(--muted)">${esc(x.brand)}</p>`:'')}</div>`;
+  if(c){
+    h+=`<div class="box"><dl class="dl"><dt>Item #</dt><dd><b>${esc(c.sku)}</b></dd>${c.size?`<dt>Height</dt><dd>${esc(c.size)} in</dd>`:''}${c.series?`<dt>Series</dt><dd>#${c.series} in series</dd>`:''}
+     <dt>Folder</dt><dd>${folderNames.map(f=>`<button class="btn small" data-gof="${esc(f.id)}" style="margin:0 6px 6px 0">${esc(f.name)}</button>`).join('')}</dd>
+     <dt>MSRP</dt><dd>${ms!=null?`<b>${money(ms)}</b>${it&&it.msrp!=null?' <span class="note">(you set this)</span>':c.msrpSrc?` <span class="note">(${esc(c.msrpSrc)})</span>`:''}`:'<span class="note">Not loaded yet</span>'}
+      ${it&&it.msrp!=null||c.msrp!=null?'':`<br><a href="${esc(msrpUrl(c))}" target="_blank" rel="noopener" style="font-weight:700">Look up MSRP ↗</a>`}</dd></dl>
+     <a class="btn primary block" href="${esc(c.url)}" target="_blank" rel="noopener">Open on kurtadler.com ↗</a></div>`;
+  }
+  if(!owned){
+    h+=`<div class="linkrow"><a class="btn" href="${esc(ebayUrl(q))}" target="_blank" rel="noopener">Check eBay sold prices ↗</a></div>
+    <button class="btn green block" id="addOwn" style="min-height:58px;font-size:19px">+ Add to my collection</button>`;
+    s.body.innerHTML=h;bindDetail();s.el.querySelector('.sheet').scrollTop=st;return;
+  }
+  if(!c){
+    h+=`<div class="box"><h3>Details</h3>
+     <div class="field"><label for="d-brand">Brand</label><input type="text" id="d-brand" data-c="brand" value="${esc(x.brand)}"></div>
+     <div class="field"><label for="d-name">Name / model</label><input type="text" id="d-name" data-c="name" value="${esc(x.name)}"></div>
+     <div class="two"><div class="field"><label for="d-sku">Item #</label><input type="text" id="d-sku" data-c="sku" value="${esc(x.sku)}"></div><div class="field"><label for="d-size">Height (in)</label><input type="text" inputmode="decimal" id="d-size" data-c="size" value="${esc(x.size)}"></div></div>
+     <div class="field"><label for="d-url">Product page link</label><input type="url" id="d-url" data-c="url" value="${esc(x.url)}" placeholder="https://"></div>
+     ${x.url?`<a class="btn block" href="${esc(x.url)}" target="_blank" rel="noopener">Open product page ↗</a>`:''}
+     ${it.kind==='ka'?'<p class="note" style="margin:0">Kurt Adler piece not in the current online catalog.</p>':''}</div>`;
+  }
+  const cfs=Object.entries(S.cfolders).sort((a,b)=>a[1].name.localeCompare(b[1].name));
+  h+=`<div class="box"><h3>Prices</h3>
+   <div class="field"><span class="lbl">Quantity</span><div class="stepper"><button data-qty="-1" aria-label="One fewer">−</button><output>${qtyOf(it)}</output><button data-qty="1" aria-label="One more">+</button></div></div>
+   <div class="two"><div class="field"><label for="d-paid">I paid (each)</label><input type="text" inputmode="decimal" id="d-paid" value="${it.paid!=null?it.paid:''}" placeholder="${ms!=null?money(ms):'$'}"></div>
+   <div class="field"><label for="d-msrp">MSRP</label><input type="text" inputmode="decimal" id="d-msrp" value="${it.msrp!=null?it.msrp:''}" placeholder="${c&&c.msrp!=null?money(c.msrp):'$'}"></div></div>
+   <p class="note" style="margin:0">Leave “I paid” empty to count it at MSRP.</p>
+   <div class="hr"></div>
+   <div class="two"><div class="field"><label for="d-mkt">Market value (each)</label><input type="text" inputmode="decimal" id="d-mkt" value="${it.market!=null?it.market:''}" placeholder="$"></div>
+   <div class="field"><span class="lbl">Checked</span><div style="min-height:50px;display:flex;align-items:center">${it.marketDate?esc(new Date(it.marketDate+'T12:00').toLocaleDateString()):'—'}</div></div></div>
+   <div class="linkrow"><a class="btn" href="${esc(ebayUrl(q))}" target="_blank" rel="noopener">Check eBay sold prices ↗</a></div></div>
+  <div class="box"><h3>My folders</h3>${cfs.length?`<div class="chips" style="flex-wrap:wrap">${cfs.map(([id,f])=>`<button class="chip" data-tog="${esc(id)}" aria-pressed="${(it.folders||[]).includes(id)}">${esc(f.name)}</button>`).join('')}</div>`:'<p class="note" style="margin:0">No folders yet.</p>'}
+   <button class="btn small" id="mkF">+ New folder</button></div>
+  <div class="box"><h3>Notes</h3><div class="field"><label for="d-acq">Date acquired</label><input type="date" id="d-acq" value="${esc(it.acquired||'')}"></div>
+   <div class="field"><label for="d-notes">Notes</label><textarea id="d-notes" placeholder="Where you got it, who gave it…">${esc(it.notes||'')}</textarea></div></div>
+  <button class="btn danger block" id="rmOwn">Remove from my collection</button>`;
+  s.body.innerHTML=h;bindDetail();s.el.querySelector('.sheet').scrollTop=st;
+}
+function bindDetail(){
+  const {s,key,catId}=openDet;const B=s.body;const I=()=>S.items[key];
+  $$('[data-gof]',B).forEach(b=>b.onclick=()=>{s.close();S.tab='folders';S.folderSeg='official';S.stack=[{type:'of',id:b.dataset.gof}];render();scrollTo(0,0)});
+  const add=$('#addOwn',B);if(add)add.onclick=()=>{addCatalogItem(catId);drawDetail();toast('Added to your collection')};
+  if(!I())return;
+  const upd=(fn,delay=0)=>{const it=I();if(!it)return;fn(it);saveItem(key,delay)};
+  $$('[data-ph]',B).forEach(b=>b.onclick=async()=>{
+    const k=b.dataset.ph;
+    if(k==='off'||k==='online'){upd(it=>it.useAlt=false);drawDetail();render()}
+    else if(k==='mine'){upd(it=>it.useAlt=true);drawDetail();render()}
+    else if(k==='del'){if(await askConfirm('Remove your photo?',catId!=null?'The official photo will be shown instead.':'The online photo will be shown instead.','Remove',true)){const p=I()&&I().photo;upd(it=>{it.photo=null;it.useAlt=false});deletePhoto(p);drawDetail();render()}}
+    else if(k==='new'){const src=await chooseSource('Alternative photo');if(!src)return;const f=await pickImage(src==='cam');if(!f)return;
+      toast('Saving photo…');try{const blob=await resizeToBlob(f,1600);const ph=await storePhoto(blob);let old=null;upd(it=>{old=it.photo;it.photo=ph;it.useAlt=true});if(old)deletePhoto(old);drawDetail();render();toast('Photo saved')}catch(e){console.warn(e);toast('Could not use that photo.')}}
+  });
+  $$('[data-qty]',B).forEach(b=>b.onclick=()=>{upd(it=>it.qty=Math.max(1,qtyOf(it)+(+b.dataset.qty)),600);$('.stepper output',B).textContent=qtyOf(I());render()});
+  const bindNum=(id,field,extra)=>{const el=$('#'+id,B);if(!el)return;el.onchange=()=>{upd(it=>{it[field]=num(el.value);if(extra)extra(it)});render();if(extra)drawDetail()}};
+  bindNum('d-paid','paid');bindNum('d-msrp','msrp');bindNum('d-mkt','market',it=>{it.marketDate=it.market!=null?today():null});
+  $$('[data-c]',B).forEach(el=>el.onchange=()=>{upd(it=>{it.custom=it.custom||{};it.custom[el.dataset.c]=el.value.trim()});render();if(el.dataset.c==='url')drawDetail()});
+  const acq=$('#d-acq',B);acq.onchange=()=>upd(it=>it.acquired=acq.value);
+  const nt=$('#d-notes',B);nt.oninput=()=>upd(it=>it.notes=nt.value,900);
+  $$('[data-tog]',B).forEach(b=>b.onclick=()=>{const id=b.dataset.tog;let on;upd(it=>{const fs=new Set(it.folders||[]);fs.has(id)?fs.delete(id):fs.add(id);it.folders=[...fs];on=fs.has(id)});b.setAttribute('aria-pressed',on);render()});
+  $('#mkF',B).onclick=async()=>{const n=await askText('New folder','Folder name','');if(n){const id=uid();S.cfolders[id]={name:n,created:Date.now()};saveFolder(id);upd(it=>it.folders=[...(it.folders||[]),id]);drawDetail();render()}};
+  $('#rmOwn',B).onclick=async()=>{const it=I();if(!it)return;if(await askConfirm('Remove from your collection?',`“${nameOf(it)}” will be removed${it.photo?' along with your photo':''}. This can’t be undone.`,'Remove',true)){
+    const cur=I();if(!cur)return;delete S.items[key];saveItem(key);deletePhoto(cur.photo);deletePhoto(cur.online);if(catId==null)s.close();else drawDetail();render();toast('Removed')}};
+}
+function addCatalogItem(catId,extra={}){
+  const key=keyFor(catId);const ex=S.items[key];
+  if(ex){ex.qty=qtyOf(ex)+1;if(extra.photo&&!ex.photo){ex.photo=extra.photo}saveItem(key);render();return key}
+  S.items[key]=Object.assign({kind:'ka',catId,qty:1,paid:null,msrp:null,market:null,marketDate:null,acquired:today(),notes:'',photo:null,useAlt:false,folders:[],added:Date.now()},extra);
+  saveItem(key);render();return key;
+}
+function openFolderPicker(fid){
+  const list=sortList(ownedList(),'name');const sel=new Set(list.filter(i=>(i.folders||[]).includes(fid)).map(i=>i.key));
+  const s=openSheet('Add to “'+S.cfolders[fid].name+'”',list.length?`<p class="note" style="margin:0">Tap to select. Selected nutcrackers are in this folder.</p><div class="grid picker" style="--cols:3">${list.map(i=>`<button class="tile" data-pk="${esc(i.key)}" aria-pressed="${sel.has(i.key)}"><div class="ph"><img loading="lazy" ${srcA(photoOf(i))} alt=""></div><div class="nm">${esc(nameOf(i))}</div></button>`).join('')}</div><button class="btn primary block" id="pkDone">Done</button>`:`<p>Your library is empty — scan or add nutcrackers first.</p>`);
+  $$('[data-pk]',s.el).forEach(b=>b.onclick=()=>{const k=b.dataset.pk;sel.has(k)?sel.delete(k):sel.add(k);b.setAttribute('aria-pressed',sel.has(k))});
+  const d=$('#pkDone',s.el);if(d)d.onclick=()=>{for(const i of list){const it=S.items[i.key];const has=(it.folders||[]).includes(fid);if(sel.has(i.key)!==has){it.folders=sel.has(i.key)?[...(it.folders||[]),fid]:(it.folders||[]).filter(x=>x!==fid);saveItem(i.key)}}s.close();render()};
+}
+
+/* ---------- scanning ---------- */
+const MODEL_ID='Xenova/dinov2-small',DIMS=384,TJS='https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.1';
+function chooseSource(title,live){return new Promise(res=>{let done=false;
+  const s=openSheet(title,`${live?`<button class="btn primary block" data-src="live" style="min-height:60px"><svg width="26" height="26"><use href="#i-cam"/></svg>Live camera</button>`:''}
+   <button class="btn ${live?'':'primary'} block" data-src="cam" style="min-height:60px"><svg width="26" height="26"><use href="#i-cam"/></svg>Take a photo</button>
+   <button class="btn block" data-src="lib" style="min-height:60px"><svg width="26" height="26"><use href="#i-photo"/></svg>Choose from Photos</button>`,{small:true,onClose:()=>{if(!done)res(null)}});
+  $$('[data-src]',s.el).forEach(b=>b.onclick=()=>{done=true;s.close();res(b.dataset.src)})})}
+function openScanChooser(){
+  const s=openSheet('Scan a nutcracker',`
+   <button class="btn primary block" data-kind="ka" style="min-height:76px;font-size:20px;flex-direction:column;gap:2px"><span>Kurt Adler</span><span style="font-size:15px;font-weight:400">Finds the exact piece in the official catalog</span></button>
+   <button class="btn green block" data-kind="other" style="min-height:76px;font-size:20px;flex-direction:column;gap:2px"><span>Other brand</span><span style="font-size:15px;font-weight:400">Uses your photo; add the details yourself</span></button>`,{small:true});
+  $$('[data-kind]',s.el).forEach(b=>b.onclick=async()=>{const kind=b.dataset.kind;s.close();
+    const src=await chooseSource(kind==='ka'?'Kurt Adler photo':'Nutcracker photo',true);if(!src)return;
+    if(src==='live'){const r=await liveCamera(kind==='ka');if(!r)return;kind==='ka'?scanKA(r,{cropped:true}):scanOther(r);return}
+    const f=await pickImage(src==='cam');if(!f)return;kind==='ka'?scanKA(f):scanOther(f)});
+}
+
+/* live camera viewfinder with a guide frame; returns the framed area as a JPEG blob */
+function liveCamera(isKA){return new Promise(async res=>{
+  let stream=null,done=false;
+  const stop=()=>{if(stream)stream.getTracks().forEach(t=>t.stop());stream=null};
+  const s=openSheet('Live camera',`<div class="cam"><video playsinline muted autoplay></video><div class="guide"></div></div>
+    <p class="note" style="margin:0;text-align:center">${isKA?'Fit the whole nutcracker inside the gold frame, then tap the button.':'Fit the nutcracker inside the gold frame.'}</p>
+    <div class="row" style="justify-content:center"><button class="shutter" aria-label="Take picture"></button></div>`,{onClose:()=>{stop();if(!done)res(null)}});
+  const v=$('video',s.el);
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1440}},audio:false});v.srcObject=stream;await v.play().catch(()=>{})}
+  catch(e){done=true;s.close();toast('The live camera isn’t available — opening the regular camera.');const f=await pickImage(true);res(f||null);return}
+  $('.shutter',s.el).onclick=()=>{
+    const box=$('.cam',s.el).getBoundingClientRect(),g=$('.guide',s.el).getBoundingClientRect();
+    const vw=v.videoWidth,vh=v.videoHeight;if(!vw){toast('Camera is still starting…');return}
+    const sc=Math.max(box.width/vw,box.height/vh),ox=(box.width-vw*sc)/2,oy=(box.height-vh*sc)/2;
+    // add a little margin around the guide so nothing is clipped
+    const m=.06,gx=g.left-box.left-g.width*m,gy=g.top-box.top-g.height*m,gw=g.width*(1+2*m),gh=g.height*(1+2*m);
+    let sx=(gx-ox)/sc,sy=(gy-oy)/sc,sw=gw/sc,sh=gh/sc;sx=Math.max(0,sx);sy=Math.max(0,sy);sw=Math.min(vw-sx,sw);sh=Math.min(vh-sy,sh);
+    const cv=document.createElement('canvas');const k=Math.min(1,1400/Math.max(sw,sh));cv.width=Math.round(sw*k);cv.height=Math.round(sh*k);
+    cv.getContext('2d').drawImage(v,sx,sy,sw,sh,0,0,cv.width,cv.height);
+    cv.toBlob(b=>{done=true;s.close();res(b)},'image/jpeg',.9);
+  };
+})}
+
+/* crop step: drag the box around the nutcracker */
+function cropStep(s,blob){return new Promise(res=>{
+  const u=URL.createObjectURL(blob);
+  s.setTitle('Box the nutcracker');
+  s.body.innerHTML=`<p style="margin:0;font-size:17px">Drag the box (or its corners) so it fits snugly around the nutcracker. This makes matching much more accurate.</p>
+   <div class="cropwrap"><div class="cropbox-host"><img src="${u}" alt="Your photo" draggable="false"><div class="cropbox"><i class="h tl"></i><i class="h tr"></i><i class="h bl"></i><i class="h br"></i></div></div></div>
+   <div class="two"><button class="btn" id="cAll">Use whole photo</button><button class="btn primary" id="cOk">Find matches</button></div>`;
+  const host=$('.cropbox-host',s.el),img=$('img',host),bx=$('.cropbox',host);
+  let r={x:.12,y:.06,w:.76,h:.88};
+  const draw=()=>{bx.style.left=r.x*100+'%';bx.style.top=r.y*100+'%';bx.style.width=r.w*100+'%';bx.style.height=r.h*100+'%'};draw();
+  let drag=null;
+  const pt=e=>{const b=host.getBoundingClientRect();return{x:(e.clientX-b.left)/b.width,y:(e.clientY-b.top)/b.height}};
+  bx.addEventListener('pointerdown',e=>{e.preventDefault();bx.setPointerCapture(e.pointerId);const h=e.target.classList.contains('h')?[...e.target.classList].find(c=>c!=='h'):'move';drag={h,p:pt(e),r:{...r}}});
+  bx.addEventListener('pointermove',e=>{if(!drag)return;const p=pt(e),dx=p.x-drag.p.x,dy=p.y-drag.p.y,o=drag.r,min=.12;let {x,y,w,h}=o;
+    if(drag.h==='move'){x=Math.min(1-w,Math.max(0,o.x+dx));y=Math.min(1-h,Math.max(0,o.y+dy))}
+    else{if(drag.h.includes('l')){x=Math.min(o.x+o.w-min,Math.max(0,o.x+dx));w=o.x+o.w-x}
+      if(drag.h.includes('r')){w=Math.min(1-o.x,Math.max(min,o.w+dx))}
+      if(drag.h.includes('t')){y=Math.min(o.y+o.h-min,Math.max(0,o.y+dy));h=o.y+o.h-y}
+      if(drag.h.includes('b')){h=Math.min(1-o.y,Math.max(min,o.h+dy))}}
+    r={x,y,w,h};draw()});
+  const end=()=>{drag=null};bx.addEventListener('pointerup',end);bx.addEventListener('pointercancel',end);
+  const finish=async whole=>{
+    if(whole){URL.revokeObjectURL(u);res(blob);return}
+    const W=img.naturalWidth,H=img.naturalHeight,cv=document.createElement('canvas');
+    cv.width=Math.max(1,Math.round(r.w*W));cv.height=Math.max(1,Math.round(r.h*H));
+    cv.getContext('2d').drawImage(img,r.x*W,r.y*H,r.w*W,r.h*H,0,0,cv.width,cv.height);URL.revokeObjectURL(u);
+    cv.toBlob(b=>res(b||blob),'image/jpeg',.9)};
+  $('#cAll',s.el).onclick=()=>finish(true);$('#cOk',s.el).onclick=()=>finish(false);
+})}
+
+/* on-device photo matcher (DINOv2, runs in the browser) */
+let MATCH=null,EMB=null;
+async function loadMatcher(onStatus){
+  if(!EMB){const r=await fetch('emb.bin');if(!r.ok)throw new Error('emb');const buf=await r.arrayBuffer(),N=S.cat.items.length;EMB={sc:new Float32Array(buf.slice(0,N*4)),q:new Int8Array(buf,N*4)}}
+  if(!MATCH){onStatus&&onStatus(1);
+    const T=await import(TJS);T.env.allowLocalModels=false;
+    const proc=await T.AutoProcessor.from_pretrained(MODEL_ID);
+    const model=await T.AutoModel.from_pretrained(MODEL_ID,{dtype:'q8'});
+    MATCH={T,proc,model}}
+  return MATCH}
+async function embedBlob(blob){
+  const u=URL.createObjectURL(blob);
+  try{const im=await MATCH.T.RawImage.fromURL(u);const out=await MATCH.model(await MATCH.proc(im));
+    let v;if(out.image_embeds)v=out.image_embeds.data;else if(out.pooler_output)v=out.pooler_output.data;else{const t=out.last_hidden_state;v=t.data.slice(0,t.dims[2])}
+    v=Array.from(v);const n=Math.hypot(...v)||1;return v.map(x=>x/n)}
+  finally{URL.revokeObjectURL(u)}}
+function rankCatalog(v){
+  const items=S.cat.items,out=[];
+  const q=EMB.q;for(let i=0;i<items.length;i++){if(!items[i].p)continue;let s=0;const o=i*DIMS;for(let d=0;d<DIMS;d++)s+=q[o+d]*v[d];out.push({sku:items[i].sku.toUpperCase(),score:s*EMB.sc[i]})}
+  return out.sort((a,b)=>b.score-a.score);
+}
+async function scanKA(file,{cropped=false}={}){
+  const s=openSheet('Finding your nutcracker','<p>Preparing photo…</p>');
+  let blob;
+  try{blob=await resizeToBlob(file,1400,.88)}catch(e){s.body.innerHTML=`<p>That photo couldn’t be opened. Try a different photo or a screenshot.</p>`;return}
+  if(!cropped){blob=await cropStep(s,blob)}
+  s.setTitle('Finding your nutcracker');
+  const purl=URL.createObjectURL(blob);
+  const steps=a=>`<div class="steps">${['Getting the photo matcher ready','Comparing with all '+S.cat.items.length+' catalog photos'].map((t,i)=>`<div class="${i<a?'done':i===a?'on':''}">${t}</div>`).join('')}</div>`;
+  s.body.innerHTML=`<div class="compare"><figure><img src="${purl}" alt="Your photo"><figcaption>Your photo</figcaption></figure><div style="display:flex;flex-direction:column;justify-content:center;gap:12px">${steps(0)}</div></div>
+   <p class="note" id="firstNote" style="margin:0">The first scan downloads the matcher (about 25 MB) — after that it’s quick and works on this phone.</p>
+   <button class="btn block" id="ms">Search by name instead</button>`;
+  $('#ms',s.el).onclick=()=>showManualSearch(s,blob,purl,'');
+  const setStep=i=>{const st=$('.steps',s.el);if(st)st.outerHTML=steps(i)};
+  let ranked;
+  try{
+    await loadMatcher();if(!document.body.contains(s.el))return;setStep(1);const fn=$('#firstNote',s.el);if(fn)fn.remove();
+    const v=await embedBlob(blob);ranked=rankCatalog(v);
+  }catch(e){console.warn(e);if(!document.body.contains(s.el))return;
+    s.body.innerHTML=`<p style="margin:0">The photo matcher couldn’t start${navigator.onLine?'':' — you look offline'}. You can search the catalog by name instead, or try again.</p><div class="two"><button class="btn" id="man">Search by name</button><button class="btn primary" id="rt">Try again</button></div>`;
+    $('#man',s.el).onclick=()=>showManualSearch(s,blob,purl,'');$('#rt',s.el).onclick=()=>{s.close();scanKA(blob,{cropped:true})};return}
+  if(!document.body.contains(s.el))return;
+  showCandidates(s,blob,purl,ranked.slice(0,8));
+}
+function showCandidates(s,blob,purl,cands){
+  s.setTitle('Is it one of these?');
+  const best=cands[0]?cands[0].score:0;
+  s.body.innerHTML=`<div class="compare"><figure><img src="${purl}" alt=""><figcaption>Your photo</figcaption></figure><div style="display:flex;flex-direction:column;justify-content:center;gap:8px"><p style="margin:0;font-size:16px">Closest matches first. Tap the one that’s yours — nothing is added until you confirm.</p></div></div>
+   <div class="cands">${cands.map((c,i)=>{const it=S.bySku.get(c.sku);const own=ownedCat(it.id);const close=i===0||c.score>=best-.03;return `<div class="cand"><img ${srcA(it.img)} alt=""><div style="display:grid;gap:6px"><div style="font-weight:700;font-size:18px;line-height:1.2">${esc(it.short)}</div><div class="note">${esc(it.sku)} · ${esc(S.folderById.get(it.f[0]).name)}</div><div><span class="score" style="color:${i===0?'var(--green)':close?'var(--gold)':'var(--muted)'}">${i===0?'Closest match':close?'Also very close':'Possible match'}</span></div>${own?`<div class="pill">You own ${qtyOf(own)}</div>`:''}<button class="btn primary small" data-pick="${it.id}">This is it</button></div></div>`}).join('')}</div>
+   <div class="hr"></div><p style="margin:0;font-weight:700">None of these?</p>
+   <div class="two"><button class="btn" id="srch">Search catalog</button><button class="btn" id="notin">Not in catalog</button></div>`;
+  $$('[data-pick]',s.el).forEach(b=>b.onclick=()=>confirmPick(s,blob,purl,+b.dataset.pick,()=>showCandidates(s,blob,purl,cands)));
+  $('#srch',s.el).onclick=()=>showManualSearch(s,blob,purl,'');
+  $('#notin',s.el).onclick=()=>{s.close();scanOther(blob,{kind:'ka',brand:'Kurt Adler',name:''})};
+}
+function showManualSearch(s,blob,purl,q){
+  s.setTitle('Find it in the catalog');
+  s.body.innerHTML=`${purl?`<div style="display:flex;gap:12px;align-items:center"><img src="${purl}" alt="" style="width:90px;height:110px;object-fit:cover;border-radius:12px"><p class="note" style="margin:0">Search by any word in the name, or the item # on the tag.</p></div>`:''}
+   <input type="search" id="msq" placeholder="e.g. Mad Hatter or HA0761" value="${esc(q)}"><div id="msr" class="grid" style="--cols:2"></div>
+   <button class="btn" id="notin2">It’s not in the catalog</button>`;
+  const inp=$('#msq',s.el),out=$('#msr',s.el);
+  const draw=()=>{const v=inp.value.trim().toLowerCase();const words=v.split(/\s+/).filter(Boolean);const res=words.length?S.cat.items.filter(c=>{const t=(c.name+' '+c.sku).toLowerCase();return words.every(w=>t.includes(w))}).slice(0,40):[];
+    out.innerHTML=res.map(c=>`<button class="tile" data-pick="${c.id}"><div class="ph"><img loading="lazy" ${srcA(c.img)} alt=""></div>${ownedCat(c.id)?`<span class="own"><svg width="20" height="20"><use href="#i-check"/></svg></span>`:''}<div class="nm">${esc(c.short)} <span class="note">${esc(c.sku)}</span></div></button>`).join('')||(words.length?'<p class="note">No matches.</p>':'');
+    $$('[data-pick]',out).forEach(b=>b.onclick=()=>confirmPick(s,blob,purl,+b.dataset.pick,()=>showManualSearch(s,blob,purl,inp.value)))};
+  inp.oninput=draw;draw();setTimeout(()=>inp.focus(),80);
+  $('#notin2',s.el).onclick=()=>{s.close();scanOther(blob,{kind:'ka',brand:'Kurt Adler',name:inp.value.trim()})};
+}
+function confirmPick(s,blob,purl,catId,back){
+  const c=S.byId.get(catId);const own=ownedCat(catId);
+  s.setTitle('Confirm');
+  s.body.innerHTML=`<div class="compare">${purl?`<figure><img src="${purl}" alt=""><figcaption>Your photo</figcaption></figure>`:''}<figure><img ${srcA(c.img)} alt=""><figcaption>${esc(c.sku)}</figcaption></figure></div>
+   <h2 style="font-size:24px">${esc(c.short)}</h2><p class="note" style="margin:0">${esc(c.name)}</p>
+   ${own?`<div class="banner" style="margin:0">You already own ${qtyOf(own)}. Confirming adds another (quantity ${qtyOf(own)+1}).</div>`:''}
+   <div class="field"><label for="cp-paid">What you paid (optional)</label><input type="text" inputmode="decimal" id="cp-paid" placeholder="${c.msrp!=null?'MSRP '+money(c.msrp):'$'}"></div>
+   ${blob&&!own?`<label style="display:flex;gap:10px;align-items:center;font-size:17px;min-height:44px"><input type="checkbox" id="cp-keep" style="width:24px;height:24px"> Also keep my photo (official photo still shows)</label>`:''}
+   <div class="two"><button class="btn" id="cpBack">Back</button><button class="btn green" id="cpOk">${own?'Add another':'Add to collection'}</button></div>`;
+  $('#cpBack',s.el).onclick=()=>back?back():showManualSearch(s,blob,purl,'');
+  $('#cpOk',s.el).onclick=async()=>{const b=$('#cpOk',s.el);b.disabled=true;
+    const paid=num($('#cp-paid',s.el).value);const keep=$('#cp-keep',s.el)&&$('#cp-keep',s.el).checked;
+    let photo=null;if(keep&&blob){b.textContent='Saving photo…';try{photo=await storePhoto(blob)}catch(e){toast('Photo not saved, adding anyway')}}
+    const key=addCatalogItem(catId,photo?{photo}:{});if(paid!=null&&!own){S.items[key].paid=paid;saveItem(key)}
+    s.close();toast(`${c.short} added`);S.tab='library';S.stack=[];render();openDetail({catId})};
+}
+async function shareToLens(blob){
+  const f=new File([blob],'nutcracker.jpg',{type:'image/jpeg'});
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){toast('Pick the Google app to search with Lens');await navigator.share({files:[f]});return}}catch(e){if(e&&e.name==='AbortError')return}
+  window.open('https://lens.google.com/','_blank','noopener');
+}
+async function scanOther(file,preset={}){
+  const s=openSheet(preset.kind==='ka'?'Kurt Adler (not in catalog)':'Other brand nutcracker','<p>Preparing photo…</p>');
+  let blob,purl;try{blob=file instanceof Blob&&file.type==='image/jpeg'&&file.size<4e6?file:await resizeToBlob(file,1600,.86);purl=URL.createObjectURL(blob)}catch(e){s.body.innerHTML='<p>That photo couldn’t be opened.</p>';return}
+  const st={brand:preset.brand||'',name:preset.name||'',sku:'',size:'',url:'',paid:'',msrp:'',onlineBlob:null,onlineUrl:null,onlineRemote:null};
+  const q=()=>((st.brand+' '+st.name).trim()||'nutcracker')+(/nutcracker/i.test(st.name)?'':' nutcracker');
+  const draw=()=>{
+    s.body.innerHTML=`<div class="compare"><figure><img src="${purl}" alt=""><figcaption>Your photo</figcaption></figure>
+     ${st.onlineUrl?`<figure><img src="${esc(st.onlineUrl)}" alt=""><figcaption>Online photo ✓</figcaption></figure>`:`<div style="display:flex;flex-direction:column;justify-content:center;gap:8px"><p class="note" style="margin:0">Your photo is used in the library unless you confirm an online photo below.</p></div>`}</div>
+     <div class="box"><h3>Help me identify it</h3>
+      <button class="btn gold block" id="lens">Search this photo with Google Lens</button>
+      <div class="linkrow"><a class="btn" id="gimg" href="${esc(googleUrl(q(),true))}" target="_blank" rel="noopener">Google Images ↗</a><a class="btn" id="ebl" href="${esc('https://www.ebay.com/sch/i.html?_nkw='+encodeURIComponent(q()))}" target="_blank" rel="noopener">eBay ↗</a></div>
+      <p class="note" style="margin:0">Lens: in the share menu choose the <b>Google</b> app. Many nutcrackers look alike, so only fill in a brand and model once you’re sure it’s the same piece. The search buttons use whatever you type below.</p></div>
+     <div class="box"><h3>Details</h3>
+      <div class="field"><label for="o-brand">Brand</label><input type="text" id="o-brand" value="${esc(st.brand)}" placeholder="e.g. Steinbach"></div>
+      <div class="field"><label for="o-name">Name / model</label><input type="text" id="o-name" value="${esc(st.name)}" placeholder="e.g. King with scepter"></div>
+      <div class="two"><div class="field"><label for="o-sku">Item #</label><input type="text" id="o-sku" value="${esc(st.sku)}"></div><div class="field"><label for="o-size">Height (in)</label><input type="text" inputmode="decimal" id="o-size" value="${esc(st.size)}"></div></div>
+      <div class="two"><div class="field"><label for="o-paid">I paid</label><input type="text" inputmode="decimal" id="o-paid" value="${esc(st.paid)}" placeholder="$"></div><div class="field"><label for="o-msrp">MSRP</label><input type="text" inputmode="decimal" id="o-msrp" value="${esc(st.msrp)}" placeholder="$"></div></div>
+      <div class="field"><label for="o-url">Product page link (optional)</label><input type="url" id="o-url" value="${esc(st.url)}" placeholder="https://"></div></div>
+     <div class="box"><h3>Found it online?</h3>
+      <p style="margin:0;font-size:16px">Use the shop’s photo instead of yours. On the website, press and hold the picture and choose <b>Copy Image Address</b> (paste it here) or <b>Save to Photos</b> (then pick it). You’ll confirm it’s the same nutcracker first.</p>
+      <div class="row" style="flex-wrap:nowrap"><input type="url" id="o-img" placeholder="Paste picture link" style="flex:1"><button class="btn" id="onlUrl" style="flex:none">Use</button></div>
+      <button class="btn block" id="onl">Pick a saved picture</button>${st.onlineUrl?`<button class="btn small danger" id="onlx">Don’t use the online photo</button>`:''}</div>
+     <button class="btn green block" id="save" style="min-height:58px;font-size:19px">Save to my collection</button>`;
+    const sync=()=>{for(const k of['brand','name','sku','size','paid','msrp','url'])st[k]=$('#o-'+k,s.el).value;const g=$('#gimg',s.el);if(g)g.href=googleUrl(q(),true);const e=$('#ebl',s.el);if(e)e.href='https://www.ebay.com/sch/i.html?_nkw='+encodeURIComponent(q())};
+    $$('input',s.body).forEach(i=>i.addEventListener('input',sync));
+    $('#lens',s.el).onclick=()=>shareToLens(blob);
+    const confirmOnline=async(src)=>askConfirmHtml('Same nutcracker?',`<div class="compare"><figure><img src="${purl}" alt=""><figcaption>Yours</figcaption></figure><figure><img src="${esc(src)}" alt="" onerror="this.closest('figure').innerHTML='<p style=&quot;padding:12px&quot;>That link isn’t a picture that can be shown. Try Save to Photos instead.</p>'"><figcaption>Online</figcaption></figure></div><p style="margin:0">Is the online photo exactly your nutcracker — same colours, hat and details?</p>`,'Yes, use it');
+    $('#onlUrl',s.el).onclick=async()=>{sync();const v=$('#o-img',s.el).value.trim();if(!/^https?:\/\/\S+$/i.test(v)){toast('Paste a picture link that starts with http');return}
+      if(await confirmOnline(v)){st.onlineBlob=null;st.onlineRemote=v;st.onlineUrl=v;draw()}};
+    $('#onl',s.el).onclick=async()=>{sync();const f=await pickImage(false);if(!f)return;let b;try{b=await resizeToBlob(f,1600,.86)}catch(e){toast('Couldn’t open that picture.');return}const u=URL.createObjectURL(b);
+      if(await confirmOnline(u)){st.onlineBlob=b;st.onlineRemote=null;st.onlineUrl=u;draw()}else URL.revokeObjectURL(u)};
+    const ox=$('#onlx',s.el);if(ox)ox.onclick=()=>{sync();st.onlineBlob=null;st.onlineRemote=null;st.onlineUrl=null;draw()};
+    $('#save',s.el).onclick=async()=>{sync();const b=$('#save',s.el);b.disabled=true;b.textContent='Saving…';
+      try{const photo=await storePhoto(blob);const online=st.onlineBlob?await storePhoto(st.onlineBlob):st.onlineRemote?{id:null,url:st.onlineRemote}:null;const key='o-'+uid();
+        S.items[key]={kind:preset.kind==='ka'?'ka':'other',catId:null,qty:1,paid:num(st.paid),msrp:num(st.msrp),market:null,marketDate:null,acquired:today(),notes:'',photo,online,useAlt:false,folders:[],added:Date.now(),
+          custom:{brand:st.brand.trim(),name:st.name.trim(),sku:st.sku.trim(),size:st.size.trim(),url:st.url.trim()}};
+        saveItem(key);s.close();toast('Saved');S.tab='library';S.stack=[];render();openDetail({key})}catch(e){console.warn(e);b.disabled=false;b.textContent='Save to my collection';toast('Could not save — try again.')}};
+  };
+  draw();
+}
+function askConfirmHtml(title,html,ok){return new Promise(res=>{let done=false;const s=openSheet(title,html+`<div class="two"><button class="btn" data-no>No</button><button class="btn green" data-yes>${esc(ok)}</button></div>`,{small:true,onClose:()=>{if(!done)res(false)}});
+  $('[data-no]',s.el).onclick=()=>s.close();$('[data-yes]',s.el).onclick=()=>{done=true;s.close();res(true)}})}
+
+/* ---------- boot ---------- */
+(async()=>{
+  const h=(location.hash||'').slice(1);if(['library','folders','catalog','more'].includes(h))S.tab=h;
+  render();
+  try{const r=await fetch('catalog.json');S.cat=await r.json()}catch(e){main.innerHTML='<div class="empty"><h3>Catalog didn’t load</h3><p>Check your connection and reopen the app.</p></div>';return}
+  for(const c of S.cat.items){S.byId.set(c.id,c);S.bySku.set(c.sku.toUpperCase(),c)}
+  for(const f of S.cat.folders)S.folderById.set(f.id,f);
+  render();
+  await initBackend();subscribe();
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+}
+</script>
+</body>
+</html>
