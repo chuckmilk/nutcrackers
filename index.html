@@ -493,7 +493,7 @@ function renderMore(){
    <div class="box"><h3>Backup</h3><p class="note" style="margin:0">Everything lives on this phone. Save a backup file (it includes your own photos) to Files or iCloud Drive now and then, so nothing is lost if the phone is replaced.</p>
     <div class="linkrow"><button class="btn gold" id="exp">Save backup file</button><button class="btn" id="imp">Restore backup</button></div></div>
    <div class="box"><h3>About prices</h3><p style="margin:0;font-size:16px"><b>MSRP</b> is Kurt Adler’s own suggested retail price, from their listings on Faire (their wholesale shop). Where it isn’t loaded yet, tap <b>Look up MSRP</b> on the nutcracker and type the “MSRP $…” figure into its MSRP box. “Total spent” uses what you paid if you entered it, otherwise MSRP. <b>Market value</b> is what similar pieces sell for now — tap “Check eBay sold prices” on any nutcracker, then type the value you see.</p></div>
-   <div class="box"><h3>Put it on your Home Screen</h3><p style="margin:0;font-size:16px">Open this page in Safari, tap the Share button, then <b>Add to Home Screen</b>. It opens like an app.</p></div>
+   ${NATIVE?'':`<div class="box"><h3>Put it on your Home Screen</h3><p style="margin:0;font-size:16px">Open this page in Safari, tap the Share button, then <b>Add to Home Screen</b>. It opens like an app.</p></div>`}
    <div class="box"><h3>Photo size</h3><div class="seg"><button data-cols="2" aria-pressed="${S.settings.cols!==3}">Big photos</button><button data-cols="3" aria-pressed="${S.settings.cols===3}">Small photos</button></div></div>
   </div>`;
   $$('[data-cols]').forEach(b=>b.onclick=()=>{S.settings.cols=+b.dataset.cols;saveSettings();render()});
@@ -501,7 +501,7 @@ function renderMore(){
     try{const photos={};if(IDB){const all=await idbAll('photos');for(const [k,v] of Object.entries(all))photos[k]=await blobToDataUrl(v)}
       const json=JSON.stringify({app:'nutcracker-keeper',version:2,exported:new Date().toISOString(),items:S.items,folders:S.cfolders,settings:S.settings,photos});
       const name=`nutcracker-collection-${today()}.json`,file=new File([json],name,{type:'application/json'});
-      let shared=false;try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});shared=true}}catch(e){if(e&&e.name==='AbortError')shared=true}
+      let shared=await nativeShare(name,file);try{if(!shared&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});shared=true}}catch(e){if(e&&e.name==='AbortError')shared=true}
       if(!shared){const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000)}
     }catch(e){console.warn(e);toast('Could not make the backup.')}finally{b.disabled=false;b.textContent='Save backup file'}};
   $('#imp').onclick=()=>{const f=$('#fileJson');f.value='';f.onchange=async()=>{const file=f.files[0];if(!file)return;try{const d=JSON.parse(await file.text());if(d.app!=='nutcracker-keeper')throw 0;
@@ -835,7 +835,10 @@ function confirmPick(s,blob,purl,catId,back){
     const key=addCatalogItem(catId,photo?{photo}:{});if(paid!=null&&!own){S.items[key].paid=paid;saveItem(key)}
     s.close();toast(`${c.short} added`);S.tab='library';S.stack=[];render();openDetail({catId})};
 }
+const NATIVE=!!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.nkShare);
+async function nativeShare(name,blob){if(!NATIVE)return false;try{const d=(await blobToDataUrl(blob)).split(',')[1];window.webkit.messageHandlers.nkShare.postMessage({name,data:d});return true}catch(e){return false}}
 async function shareToLens(blob){
+  if(NATIVE){toast('Pick the Google app to search with Lens');await nativeShare('nutcracker.jpg',blob);return}
   const f=new File([blob],'nutcracker.jpg',{type:'image/jpeg'});
   try{if(navigator.canShare&&navigator.canShare({files:[f]})){toast('Pick the Google app to search with Lens');await navigator.share({files:[f]});return}}catch(e){if(e&&e.name==='AbortError')return}
   window.open('https://lens.google.com/','_blank','noopener');
